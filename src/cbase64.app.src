@@ -1,0 +1,11 @@
+{application, cbase64, [
+	{description, "A Base64 encoder/decoder as a NIF."},
+	{vsn, "0.1"},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib
+			]},
+	{env, []},
+	{modules, [cbase64]}
+]}.
