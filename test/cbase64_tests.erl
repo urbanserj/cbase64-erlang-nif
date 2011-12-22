@@ -10,20 +10,20 @@ empty_test() ->
 	).
 
 proper_small_test_() ->
-    PropErOpts = [
-        {to_file, user},
+	PropErOpts = [
+		{to_file, user},
 		{max_size, 64},
-        {numtests, 10240}
-    ],
-    {timeout, 60, ?_assertEqual([], proper:module(?MODULE, PropErOpts))}.
+		{numtests, 10240}
+	],
+	{timeout, 60, ?_assertEqual([], proper:module(?MODULE, PropErOpts))}.
 
 proper_big_test_() ->
-    PropErOpts = [
-        {to_file, user},
+	PropErOpts = [
+		{to_file, user},
 		{max_size, 1048576},
-        {numtests, 64}
-    ],
-    {timeout, 3600, ?_assertEqual([], proper:module(?MODULE, PropErOpts))}.
+		{numtests, 64}
+	],
+	{timeout, 3600, ?_assertEqual([], proper:module(?MODULE, PropErOpts))}.
 
 prop_cbase64_enc_dec() ->
 	?FORALL(Data, binary(),

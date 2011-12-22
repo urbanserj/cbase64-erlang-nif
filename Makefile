@@ -1,11 +1,14 @@
-all: compile eunit
+all: compile
 
-compile:
+deps:
+	rebar get-deps
+
+compile: deps
 	rebar compile
 
-eunit:
-	rebar eunit
+eunit: compile
+	rebar eunit skip_deps=true
 
 clean:
 	rebar clean
-	rm -rf priv ebin .eunit
+	rm -rf priv ebin .eunit deps

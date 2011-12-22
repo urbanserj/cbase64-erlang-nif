@@ -8,10 +8,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -66,7 +66,7 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	  (_) >= 'a' && (_) <= 'z' ? 51 - 'z' + (_) : \
 	  (_) >= '0' && (_) <= '9' ? 61 - '9' + (_) : \
 	  (_) == '+' ? 62 : (_) ? 63 : DECODE_ERROR )
-	
+
 static const int cd64[256] = {
 	B64(  0), B64(  1), B64(  2), B64(  3), B64(  4), B64(  5), B64(  6), B64(  7),
 	B64(  8), B64(  9), B64( 10), B64( 11), B64( 12), B64( 13), B64( 14), B64( 15),
@@ -165,7 +165,7 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	ret_size = block.size/4*3 - (block.data[block.size - 1] == '=' ? 1 : 0)
 	                          - (block.data[block.size - 2] == '=' ? 1 : 0);
-	if ( !enif_alloc_binary(ret_size, &ret) ) 
+	if ( !enif_alloc_binary(ret_size, &ret) )
 		return enif_make_atom(env, "error");
 
 	for (it = 0, it_b64 = 0; it_b64 < block.size - 4; it += 3, it_b64 += 4) {
