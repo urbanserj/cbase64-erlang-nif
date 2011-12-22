@@ -160,6 +160,9 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	if ( !enif_inspect_iolist_as_binary(env, argv[0], &block) || block.size % 4 )
 		return enif_make_badarg(env);
 
+	if ( block.size == 0 )
+		return argv[0];
+
 	ret_size = block.size/4*3 - (block.data[block.size - 1] == '=' ? 1 : 0)
 	                          - (block.data[block.size - 2] == '=' ? 1 : 0);
 	if ( !enif_alloc_binary(ret_size, &ret) ) 
