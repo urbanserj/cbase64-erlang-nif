@@ -34,8 +34,8 @@ on_load() ->
 	SoName = filename:join(BaseDir, atom_to_list(?MODULE)),
 	erlang:load_nif(SoName, 0).
 
-encode(block) ->
-	base64:encode(block).
+encode(Block) ->
+	base64:encode(Block).
 
-decode(block) ->
-	base64:decode(block).
+decode(Block) ->
+	base64:decode(Block).
