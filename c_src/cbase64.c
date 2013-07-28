@@ -1,5 +1,5 @@
-/* ex: ts=4 sw=4 et */
-/*
+/* ex: ts=4 sw=4 et
+ *
  * Copyright (c) 2011 Sergey Urbanovich
  * http://github.com/urbanserj/cbase64-erlang-nif
  *
@@ -31,6 +31,13 @@
 #define TIMESLICE 10
 #define ITER (REDUCTIONS * SPEEDUP / TIMESLICE)
 
+#if ERL_NIF_MAJOR_VERSION < 2 || ERL_NIF_MINOR_VERSION < 4
+#define enif_consume_timeslice_acc() u_char acc_timeslice = 0;
+#define enif_consume_timeslice(env, timeslice) ((acc_timeslice += timeslice) >= 100)
+#else
+#define enif_consume_timeslice_begin() ()
+#endif
+
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -51,6 +58,7 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
     size_t timeslice;
+    enif_consume_timeslice_acc();
 
     if ( enif_inspect_binary(env, argv[0], &data) ) {
         data_ret = argv[0];
@@ -71,7 +79,6 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if ( !enif_get_int(env, argv[2], &buf_size) )
         return enif_make_badarg(env);
 
-#if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4
     it = buf_size / 4 * 3;
     it_b64 = buf_size;
     do {
@@ -83,11 +90,6 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     if (it + 3 < data.size)
         return enif_make_tuple3(env, data_ret, ret, enif_make_int(env, buf_size));
-#else
-    for(it = 0, it_b64 = 0; it < data.size; it += 3, it_b64 += 4) {
-        encodeblock(data.data + it, buf + it_b64, min(data.size-it, 3));
-    }
-#endif
     return ret;
 }
 
@@ -192,6 +194,7 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
     size_t timeslice;
+    enif_consume_timeslice_acc();
 
     if ( enif_inspect_binary(env, argv[0], &data) ) {
         data_ret = argv[0];
@@ -217,7 +220,6 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if ( !enif_get_int(env, argv[2], &buf_size) )
         return enif_make_badarg(env);
 
-#if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4
     it = buf_size;
     it_b64 = buf_size / 3 * 4;
 
@@ -231,12 +233,6 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if (it_b64 + 4 < data.size) {
         return enif_make_tuple3(env, data_ret, ret, enif_make_int(env, buf_size));
     }
-#else
-    for (it = 0, it_b64 = 0; it_b64 < data.size - 4; it += 3, it_b64 += 4) {
-        if ( decodeblock(data.data + it_b64, buf_data + it) )
-            goto BADARG;
-    }
-#endif
     if ( decodeblock_tail(data.data + it_b64, buf_data + it) )
         goto BADARG;
     return ret;
