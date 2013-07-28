@@ -4,3 +4,4 @@
 .eunit/
 ebin/
 priv/
+deps/
