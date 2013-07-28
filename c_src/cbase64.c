@@ -35,7 +35,7 @@
 #define enif_consume_timeslice_acc() u_char acc_timeslice = 0;
 #define enif_consume_timeslice(env, timeslice) ((acc_timeslice += timeslice) >= 100)
 #else
-#define enif_consume_timeslice_begin() ()
+#define enif_consume_timeslice_acc()
 #endif
 
 
