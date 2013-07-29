@@ -26,17 +26,16 @@
 
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
+#if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4
+#define TIMESLICE 10
+#else
+#define TIMESLICE 100
+#define enif_consume_timeslice(env, timeslice) 1
+#endif
+
 #define SPEEDUP 30
 #define REDUCTIONS 2000
-#define TIMESLICE 10
 #define ITER (REDUCTIONS * SPEEDUP / TIMESLICE)
-
-#if ERL_NIF_MAJOR_VERSION < 2 || ERL_NIF_MINOR_VERSION < 4
-#define enif_consume_timeslice_acc() u_char acc_timeslice = 0;
-#define enif_consume_timeslice(env, timeslice) ((acc_timeslice += timeslice) >= 100)
-#else
-#define enif_consume_timeslice_acc()
-#endif
 
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -58,7 +57,6 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
     size_t timeslice;
-    enif_consume_timeslice_acc();
 
     if ( enif_inspect_binary(env, argv[0], &data) ) {
         data_ret = argv[0];
@@ -194,7 +192,6 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
     size_t timeslice;
-    enif_consume_timeslice_acc();
 
     if ( enif_inspect_binary(env, argv[0], &data) ) {
         data_ret = argv[0];
