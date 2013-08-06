@@ -1,5 +1,5 @@
 {application, cbase64, [
     {description, "A Base64 encoder/decoder as a NIF."},
-    {vsn, "0.2.3"},
+    {vsn, "0.2.4"},
     {applications, [kernel, stdlib]}
 ]}.

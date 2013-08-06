@@ -26,13 +26,11 @@
 
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
-#if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4
-#define TIMESLICE 10
-#else
-#define TIMESLICE 100
-#define enif_consume_timeslice(env, timeslice) 1
+#if !(ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4)
+#define enif_consume_timeslice(env, timeslice) 0
 #endif
 
+#define TIMESLICE 10
 #define SPEEDUP 30
 #define REDUCTIONS 2000
 #define ITER (REDUCTIONS * SPEEDUP / TIMESLICE)
