@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include "stdint.h"
 #include "erl_nif.h"
 
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
@@ -40,7 +41,7 @@ int enif_consume_timeslice(ErlNifEnv* env, int percent) {
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-inline void encodeblock(const u_char in[3], u_char out[4], size_t len)
+inline void encodeblock(const uint8_t in[3], uint8_t out[4], size_t len)
 {
     out[0] = cb64[ (in[0] >> 2) & 0x3f ];
     out[1] = cb64[ ((in[0] << 4) + (--len ? in[1] >> 4 : 0)) & 0x3f ];
@@ -52,7 +53,7 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     ErlNifBinary data;
     ErlNifBinary buf;
-    u_char *buf_data;
+    uint8_t *buf_data;
     int buf_size;
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
@@ -135,7 +136,7 @@ static const int cd64[256] = {
     B64(248), B64(249), B64(250), B64(251), B64(252), B64(253), B64(254), B64(255)
 };
 
-inline int decodeblock(const u_char in[4], u_char out[3])
+inline int decodeblock(const uint8_t in[4], uint8_t out[3])
 {
     int code;
     size_t it = 0;
@@ -154,7 +155,7 @@ inline int decodeblock(const u_char in[4], u_char out[3])
     return 0;
 }
 
-inline int decodeblock_tail(const u_char in[4], u_char out[3])
+inline int decodeblock_tail(const uint8_t in[4], uint8_t out[3])
 {
     int code;
     size_t it = 0;
@@ -187,7 +188,7 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     ErlNifBinary data;
     ErlNifBinary buf;
-    u_char *buf_data;
+    uint8_t *buf_data;
     int buf_size;
     ERL_NIF_TERM ret, data_ret;
     size_t it, it_b64;
