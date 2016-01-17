@@ -1,6 +1,6 @@
 %% -*- erlang-indent-level: 4;indent-tabs-mode: nil -*-
 %% ex: ts=4 sw=4 et
-%% Copyright (c) 2011 Sergey Urbanovich
+%% Copyright (c) 2011-2016 Sergey Urbanovich
 %% http://github.com/urbanserj/cbase64-erlang-nif
 %%
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,42 +39,10 @@ on_load() ->
     SoName = filename:join(BaseDir, atom_to_list(?MODULE)),
     erlang:load_nif(SoName, 0).
 
-
 -spec encode(binary() | iolist()) -> binary().
-encode(Data) ->
-    encode(Data, undefined, 0).
-
--spec encode(binary() | iolist(), binary() | undefined,
-        non_neg_integer()) -> binary().
-encode(Data, Buf, BufSize) ->
-    case nif_encode(Data, Buf, BufSize) of
-        {Data0, Buf0, BufSize0} ->
-            encode(Data0, Buf0, BufSize0);
-        Buf0 ->
-            Buf0
-    end.
-
-
--spec decode(binary() | iolist()) -> binary().
-decode(Data) ->
-    decode(Data, undefined, 0).
-
--spec decode(binary() | iolist(), binary() | undefined,
-        non_neg_integer()) -> binary().
-decode(Data, Buf, BufSize) ->
-    case nif_decode(Data, Buf, BufSize) of
-        {Data0, Buf0, BufSize0} ->
-            decode(Data0, Buf0, BufSize0);
-        Buf0 ->
-            Buf0
-    end.
-
--spec nif_encode(binary() | iolist(), binary() | undefined, non_neg_integer()) ->
-        binary() | {binary(), binary(), non_neg_integer()}.
-nif_encode(_Data, _Buf, _Size) ->
+encode(_Data) ->
     erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
 
--spec nif_decode(binary() | iolist(), binary() | undefined, non_neg_integer()) ->
-        binary() | {binary(), binary(), non_neg_integer()}.
-nif_decode(_Data, _Buf, _Size) ->
+-spec decode(binary() | iolist()) -> binary().
+decode(_Data) ->
     erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
