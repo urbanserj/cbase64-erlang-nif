@@ -1,6 +1,8 @@
 cbase64-erlang-nif
 ------------------
 
+[![Build Status](https://travis-ci.org/urbanserj/cbase64-erlang-nif.svg?branch=master)](https://travis-ci.org/urbanserj/cbase64-erlang-nif)
+
 A Base64 encoder/decoder as a NIF, but without responsiveness degradetion of the VM.
 
 Performance

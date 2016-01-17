@@ -1,0 +1,10 @@
+language: erlang
+notifications:
+  email: sergey.urbanovich@gmail.com
+script: rebar get-deps compile eunit
+otp_release:
+  - 18.1
+  - 18.0
+  - 17.5
+  - 17.4
+  - 17.3
