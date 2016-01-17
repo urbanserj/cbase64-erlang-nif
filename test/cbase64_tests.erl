@@ -32,3 +32,11 @@ prop_cbase64_enc_dec() ->
             Data = base64:decode(EncData),
             true
         end).
+
+prop_cbase64_decode() ->
+    ?FORALL(Data, binary(),
+        begin
+            try cbase64:decode(Data) of _ -> true
+            catch _:_ -> true
+            end
+        end).
