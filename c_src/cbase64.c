@@ -202,8 +202,13 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    if ( data.size == 0 )
+    if (data.size == 0) {
         return argv[0];
+    }
+
+    if (data.size % 4 != 0) {
+        return enif_make_badarg(env);
+    }
 
     if ( enif_inspect_binary(env, argv[1], &buf) ) {
         ret = argv[1];
@@ -236,7 +241,6 @@ static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return ret;
 
 BADARG:
-    enif_release_binary(&buf);
     return enif_make_badarg(env);
 }
 
