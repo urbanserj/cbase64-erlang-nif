@@ -33,10 +33,7 @@ int enif_consume_timeslice(ErlNifEnv* env, int percent) {
 }
 #endif
 
-#define TIMESLICE 10
-#define SPEEDUP 30
-#define REDUCTIONS 2000
-#define ITER (REDUCTIONS * SPEEDUP / TIMESLICE)
+#define ITER 1000
 
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
