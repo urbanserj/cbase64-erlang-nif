@@ -1,6 +1,6 @@
 /* ex: ts=4 sw=4 et
  *
- * Copyright (c) 2011 Sergey Urbanovich
+ * Copyright (c) 2011-2016 Sergey Urbanovich
  * http://github.com/urbanserj/cbase64-erlang-nif
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,13 +27,9 @@
 
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
-#if !(ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4)
-int enif_consume_timeslice(ErlNifEnv* env, int percent) {
-    return 0;
-}
-#endif
-
-#define ITER 1000
+#define TIMESLICE 10
+#define REDUCTIONS 10000
+#define ITER (REDUCTIONS / TIMESLICE)
 
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -48,49 +44,62 @@ inline void encodeblock(const uint8_t in[3], uint8_t out[4], size_t len)
 
 static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    ErlNifBinary data;
-    ErlNifBinary buf;
-    uint8_t *buf_data;
-    int buf_size;
-    ERL_NIF_TERM ret, data_ret;
-    size_t it, it_b64;
-    size_t timeslice;
+    ERL_NIF_TERM tdst, tsrc;
+    ErlNifBinary src, dst;
 
-    if ( enif_inspect_binary(env, argv[0], &data) ) {
-        data_ret = argv[0];
-    } else if ( enif_inspect_iolist_as_binary(env, argv[0], &data) ) {
-        data_ret = enif_make_binary(env, &data);
+    if ( enif_inspect_binary(env, argv[0], &src) ) {
+        tsrc = argv[0];
+    } else if ( enif_inspect_iolist_as_binary(env, argv[0], &src) ) {
+        tsrc = enif_make_binary(env, &src);
     } else {
         return enif_make_badarg(env);
     }
 
-    if ( enif_inspect_binary(env, argv[1], &buf) ) {
-        ret = argv[1];
-        buf_data = buf.data;
-    } else {
-        size_t buf_size = ( data.size + 2 ) / 3 * 4;
-        buf_data = enif_make_new_binary(env, buf_size, &ret);
+    if (src.size == 0) {
+        return argv[0];
     }
 
-    if ( !enif_get_int(env, argv[2], &buf_size) )
-        return enif_make_badarg(env);
+    uint8_t *data;
+    size_t size = (src.size + 2) / 3 * 4;
+    if (argc == 1) {
+        data = enif_make_new_binary(env, size, &tdst);
+    } else {
+        tdst = argv[1];
+        if ( !enif_inspect_binary(env, argv[1], &dst) ) {
+            return enif_make_badarg(env);
+        }
+        data = dst.data;
+    }
 
-    it = buf_size / 4 * 3;
-    it_b64 = buf_size;
-    do {
-        for (; it < data.size && it_b64 <= buf_size + ITER * 4; it += 3, it_b64 += 4)
-            encodeblock(data.data + it, buf_data + it_b64, min(data.size-it, 3));
-        timeslice = 10 * (it_b64 - buf_size) / 4 / ITER;
-        buf_size = it_b64;
-    } while ( !enif_consume_timeslice(env, timeslice) && (it + 3 < data.size));
+    int i = size / 4 - 1;
+    if (argc == 3) {
+        if ( !enif_get_int(env, argv[2], &i) ) {
+            return enif_make_badarg(env);
+        }
+    } else {
+        /* last block */
+        encodeblock(src.data + i * 3, data + i * 4, src.size - i * 3);
+        i--;
+    }
 
-    if (it + 3 < data.size)
-        return enif_make_tuple3(env, data_ret, ret, enif_make_int(env, buf_size));
-    return ret;
+    int reductions = 0;
+    for (; i >= 0; i--) {
+        encodeblock(src.data + i * 3, data + i * 4, 3);
+        reductions += 3;
+        if (reductions >= ITER) {
+            if (enif_consume_timeslice(env, TIMESLICE)) {
+                return enif_make_tuple3(env, tsrc, tdst, enif_make_int(env, i));
+            }
+            reductions = 0;
+        }
+    }
+
+    return tdst;
 }
 
 
-#define DECODE_ERROR 0xffffffff
+#define DECODE_ERROR 0xff
+#define DECODE_OK 0x00
 
 #define B64(_) \
     ( (_) >= 'A' && (_) <= 'Z' ? 25 - 'Z' + (_) : \
@@ -133,7 +142,7 @@ static const int cd64[256] = {
     B64(248), B64(249), B64(250), B64(251), B64(252), B64(253), B64(254), B64(255)
 };
 
-inline int decodeblock(const uint8_t in[4], uint8_t out[3])
+inline uint8_t decodeblock(const uint8_t in[4], uint8_t out[3])
 {
     int code;
     size_t it = 0;
@@ -149,10 +158,10 @@ inline int decodeblock(const uint8_t in[4], uint8_t out[3])
     out[1] = (val >> 8) & 0xff;
     out[2] = val & 0xff;
 
-    return 0;
+    return DECODE_OK;
 }
 
-inline int decodeblock_tail(const uint8_t in[4], uint8_t out[3])
+inline uint8_t decodeblock_tail(const uint8_t in[4], uint8_t out[3])
 {
     int code;
     size_t it = 0;
@@ -177,75 +186,80 @@ inline int decodeblock_tail(const uint8_t in[4], uint8_t out[3])
     if ( in[3] != '=' )
         out[2] = val & 0xff;
 
-    return 0;
+    return DECODE_OK;
 }
 
 static ERL_NIF_TERM decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+    ERL_NIF_TERM tdst, tsrc;
+    ErlNifBinary src, dst;
 
-    ErlNifBinary data;
-    ErlNifBinary buf;
-    uint8_t *buf_data;
-    int buf_size;
-    ERL_NIF_TERM ret, data_ret;
-    size_t it, it_b64;
-    size_t timeslice;
-
-    if ( enif_inspect_binary(env, argv[0], &data) ) {
-        data_ret = argv[0];
-    } else if ( enif_inspect_iolist_as_binary(env, argv[0], &data) ) {
-        data_ret = enif_make_binary(env, &data);
+    if ( enif_inspect_binary(env, argv[0], &src) ) {
+        tsrc = argv[0];
+    } else if ( enif_inspect_iolist_as_binary(env, argv[0], &src) ) {
+        tsrc = enif_make_binary(env, &src);
     } else {
         return enif_make_badarg(env);
     }
 
-    if (data.size == 0) {
+    if (src.size == 0) {
         return argv[0];
     }
 
-    if (data.size % 4 != 0) {
+    if (src.size % 4 != 0) {
         return enif_make_badarg(env);
     }
 
-    if ( enif_inspect_binary(env, argv[1], &buf) ) {
-        ret = argv[1];
-        buf_data = buf.data;
+    uint8_t *data;
+    size_t size =
+        src.size/4*3
+        - (src.data[src.size - 1] == '=' ? 1 : 0)
+        - (src.data[src.size - 2] == '=' ? 1 : 0);
+    if (argc == 1) {
+        data = enif_make_new_binary(env, size, &tdst);
     } else {
-        size_t buf_size = data.size/4*3
-            - (data.data[data.size - 1] == '=' ? 1 : 0)
-            - (data.data[data.size - 2] == '=' ? 1 : 0);
-        buf_data = enif_make_new_binary(env, buf_size, &ret);
+        tdst = argv[1];
+        if ( !enif_inspect_binary(env, argv[1], &dst) ) {
+            return enif_make_badarg(env);
+        }
+        data = dst.data;
     }
 
-    if ( !enif_get_int(env, argv[2], &buf_size) )
-        return enif_make_badarg(env);
-
-    it = buf_size;
-    it_b64 = buf_size / 3 * 4;
-
-    do {
-        for (; it_b64 < data.size - 4 && it < buf_size + ITER * 4; it += 3, it_b64 += 4)
-            if ( decodeblock(data.data + it_b64, buf_data + it) )
-                goto BADARG;
-        timeslice = 10 * (it - buf_size) / 4 / ITER;
-        buf_size = it;
-    } while ( !enif_consume_timeslice(env, timeslice) && (it_b64 + 4 < data.size));
-    if (it_b64 + 4 < data.size) {
-        return enif_make_tuple3(env, data_ret, ret, enif_make_int(env, buf_size));
+    int i = src.size / 4 - 1;
+    if (argc == 3) {
+        if ( !enif_get_int(env, argv[2], &i) ) {
+            return enif_make_badarg(env);
+        }
+    } else {
+        /* last block */
+        if ( decodeblock_tail(src.data + i*4, data + i*3) ) {
+            return enif_make_badarg(env);
+        }
+        i--;
     }
-    if ( decodeblock_tail(data.data + it_b64, buf_data + it) )
-        goto BADARG;
-    return ret;
 
-BADARG:
-    return enif_make_badarg(env);
+    int reductions = 0;
+    for (; i >= 0; i--) {
+        if ( decodeblock(src.data + i*4, data + i*3) ) {
+            return enif_make_badarg(env);
+        }
+        reductions += 4;
+        if (reductions >= ITER) {
+            if (enif_consume_timeslice(env, TIMESLICE)) {
+                return enif_make_tuple3(env, tsrc, tdst, enif_make_int(env, i));
+            }
+            reductions = 0;
+        }
+    }
+    return tdst;
 }
-
 
 
 static ErlNifFunc nif_funcs[] =
 {
+    {"nif_encode", 1, encode},
     {"nif_encode", 3, encode},
+    {"nif_decode", 1, decode},
     {"nif_decode", 3, decode}
 };
 ERL_NIF_INIT(cbase64, nif_funcs, NULL, NULL, NULL, NULL)

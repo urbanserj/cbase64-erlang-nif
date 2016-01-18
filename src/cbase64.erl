@@ -42,7 +42,12 @@ on_load() ->
 
 -spec encode(binary() | iolist()) -> binary().
 encode(Data) ->
-    encode(Data, undefined, 0).
+    case nif_encode(Data) of
+        {Data0, Buf0, BufSize0} ->
+            encode(Data0, Buf0, BufSize0);
+        Buf0 ->
+            Buf0
+    end.
 
 -spec encode(binary() | iolist(), binary() | undefined,
         non_neg_integer()) -> binary().
@@ -57,7 +62,12 @@ encode(Data, Buf, BufSize) ->
 
 -spec decode(binary() | iolist()) -> binary().
 decode(Data) ->
-    decode(Data, undefined, 0).
+    case nif_decode(Data) of
+        {Data0, Buf0, BufSize0} ->
+            decode(Data0, Buf0, BufSize0);
+        Buf0 ->
+            Buf0
+    end.
 
 -spec decode(binary() | iolist(), binary() | undefined,
         non_neg_integer()) -> binary().
@@ -69,12 +79,14 @@ decode(Data, Buf, BufSize) ->
             Buf0
     end.
 
--spec nif_encode(binary() | iolist(), binary() | undefined, non_neg_integer()) ->
-        binary() | {binary(), binary(), non_neg_integer()}.
+nif_encode(_Data) ->
+    erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
+
 nif_encode(_Data, _Buf, _Size) ->
     erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
 
--spec nif_decode(binary() | iolist(), binary() | undefined, non_neg_integer()) ->
-        binary() | {binary(), binary(), non_neg_integer()}.
+nif_decode(_Data) ->
+    erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
+
 nif_decode(_Data, _Buf, _Size) ->
     erlang:nif_error(not_loaded, [{module, ?MODULE}, {line, ?LINE}]).
