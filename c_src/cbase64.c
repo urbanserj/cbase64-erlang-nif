@@ -78,7 +78,7 @@ static ERL_NIF_TERM encode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     it = buf_size / 4 * 3;
     it_b64 = buf_size;
     do {
-        for (; it < data.size && it_b64 < buf_size + ITER * 4; it += 3, it_b64 += 4)
+        for (; it < data.size && it_b64 <= buf_size + ITER * 4; it += 3, it_b64 += 4)
             encodeblock(data.data + it, buf_data + it_b64, min(data.size-it, 3));
         timeslice = 10 * (it_b64 - buf_size) / 4 / ITER;
         buf_size = it_b64;
