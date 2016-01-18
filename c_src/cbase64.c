@@ -27,6 +27,12 @@
 
 #define min(X, Y)  ((X) < (Y) ? (X) : (Y))
 
+#if !(ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 4)
+int enif_consume_timeslice(ErlNifEnv* env, int percent) {
+    return 0;
+}
+#endif
+
 #define TIMESLICE 10
 #define REDUCTIONS 10000
 #define ITER (REDUCTIONS / TIMESLICE)
